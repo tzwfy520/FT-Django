@@ -12,7 +12,10 @@ import json
 import logging
 import hashlib
 
-from .models import StockBasicInfo, StockRealtimeData, StockHistoryData, StockMinuteData, WatchList
+from .models import (
+    StockBasicInfo, StockRealtimeData, StockHistoryData, StockMinuteData, WatchList,
+    StockDailyHistoryData, StockWeeklyHistoryData, StockMonthlyHistoryData
+)
 from utils.akshare_client import akshare_client
 from utils.data_processor import DataProcessor
 from utils.database import stock_data_manager
@@ -50,6 +53,452 @@ class BaseAPIView(View):
             'message': message,
             'data': None
         }, status=status)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class IndustryListView(BaseAPIView):
+    """行业板块列表API"""
+    
+    def get(self, request):
+        """获取行业板块列表"""
+        try:
+            # 从akshare获取行业板块信息
+            industry_data = akshare_client.get_industry_info()
+            
+            if industry_data is None or industry_data.empty:
+                return self.error_response('暂无行业板块数据')
+            
+            # 处理数据格式
+            industries = []
+            for _, row in industry_data.iterrows():
+                industries.append({
+                    'code': row.get('板块代码', ''),
+                    'name': row.get('板块名称', ''),
+                    'stock_count': row.get('成份股数量', 0),
+                    'latest_price': float(row.get('最新价', 0)),
+                    'change_percent': float(row.get('涨跌幅', 0)),
+                    'change_amount': float(row.get('涨跌额', 0)),
+                    'turnover': float(row.get('成交额', 0)),
+                    'market_cap': float(row.get('总市值', 0)),
+                    'pe_ratio': float(row.get('市盈率', 0))
+                })
+            
+            return self.success_response({
+                'industries': industries,
+                'total': len(industries)
+            })
+            
+        except Exception as e:
+            logger.error(f"获取行业板块列表失败: {str(e)}")
+            return self.error_response('获取行业板块列表失败')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ConceptListView(BaseAPIView):
+    """概念板块列表API"""
+    
+    def get(self, request):
+        """获取概念板块列表"""
+        try:
+            # 从akshare获取概念板块信息
+            concept_data = akshare_client.get_concept_info()
+            
+            if concept_data is None or concept_data.empty:
+                return self.error_response('暂无概念板块数据')
+            
+            # 处理数据格式
+            concepts = []
+            for _, row in concept_data.iterrows():
+                concepts.append({
+                    'code': row.get('板块代码', ''),
+                    'name': row.get('板块名称', ''),
+                    'stock_count': row.get('成份股数量', 0),
+                    'latest_price': float(row.get('最新价', 0)),
+                    'change_percent': float(row.get('涨跌幅', 0)),
+                    'change_amount': float(row.get('涨跌额', 0)),
+                    'turnover': float(row.get('成交额', 0)),
+                    'market_cap': float(row.get('总市值', 0)),
+                    'pe_ratio': float(row.get('市盈率', 0))
+                })
+            
+            return self.success_response({
+                'concepts': concepts,
+                'total': len(concepts)
+            })
+            
+        except Exception as e:
+            logger.error(f"获取概念板块列表失败: {str(e)}")
+            return self.error_response('获取概念板块列表失败')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class IndustryStocksView(BaseAPIView):
+    """行业成分股API"""
+    
+    def get(self, request):
+        """获取行业成分股列表"""
+        try:
+            industry_name = request.GET.get('industry_name', '').strip()
+            if not industry_name:
+                return self.error_response('请提供行业名称')
+            
+            # 从akshare获取行业成分股
+            stocks_data = akshare_client.get_industry_stocks(industry_name)
+            
+            if stocks_data is None or stocks_data.empty:
+                return self.error_response('暂无该行业成分股数据')
+            
+            # 处理数据格式
+            stocks = []
+            for _, row in stocks_data.iterrows():
+                stocks.append({
+                    'code': row.get('代码', ''),
+                    'name': row.get('名称', ''),
+                    'latest_price': float(row.get('最新价', 0)),
+                    'change_percent': float(row.get('涨跌幅', 0)),
+                    'change_amount': float(row.get('涨跌额', 0)),
+                    'volume': int(row.get('成交量', 0)),
+                    'turnover': float(row.get('成交额', 0)),
+                    'market_cap': float(row.get('总市值', 0)),
+                    'pe_ratio': float(row.get('市盈率', 0))
+                })
+            
+            return self.success_response({
+                'stocks': stocks,
+                'industry_name': industry_name,
+                'total': len(stocks)
+            })
+            
+        except Exception as e:
+            logger.error(f"获取行业成分股失败: {str(e)}")
+            return self.error_response('获取行业成分股失败')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ConceptStocksView(BaseAPIView):
+    """概念成分股API"""
+    
+    def get(self, request):
+        """获取概念成分股列表"""
+        try:
+            concept_name = request.GET.get('concept_name', '').strip()
+            if not concept_name:
+                return self.error_response('请提供概念名称')
+            
+            # 从akshare获取概念成分股
+            stocks_data = akshare_client.get_concept_stocks(concept_name)
+            
+            if stocks_data is None or stocks_data.empty:
+                return self.error_response('暂无该概念成分股数据')
+            
+            # 处理数据格式
+            stocks = []
+            for _, row in stocks_data.iterrows():
+                stocks.append({
+                    'code': row.get('代码', ''),
+                    'name': row.get('名称', ''),
+                    'latest_price': float(row.get('最新价', 0)),
+                    'change_percent': float(row.get('涨跌幅', 0)),
+                    'change_amount': float(row.get('涨跌额', 0)),
+                    'volume': int(row.get('成交量', 0)),
+                    'turnover': float(row.get('成交额', 0)),
+                    'market_cap': float(row.get('总市值', 0)),
+                    'pe_ratio': float(row.get('市盈率', 0))
+                })
+            
+            return self.success_response({
+                'stocks': stocks,
+                'concept_name': concept_name,
+                'total': len(stocks)
+            })
+            
+        except Exception as e:
+            logger.error(f"获取概念成分股失败: {str(e)}")
+            return self.error_response('获取概念成分股失败')
+    
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StockDailyHistoryView(BaseAPIView):
+    """股票每日历史数据API"""
+    
+    def get(self, request):
+        """获取股票每日历史数据"""
+        try:
+            stock_code = request.GET.get('stock_code', '').strip()
+            start_date = request.GET.get('start_date', '').strip()
+            end_date = request.GET.get('end_date', '').strip()
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 100))
+            
+            if not stock_code:
+                return self.error_response('请提供股票代码')
+            
+            # 构建查询条件
+            queryset = StockDailyHistoryData.objects.filter(stock_code=stock_code)
+            
+            if start_date:
+                queryset = queryset.filter(trade_date__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(trade_date__lte=end_date)
+            
+            # 按日期倒序排列
+            queryset = queryset.order_by('-trade_date')
+            
+            # 分页
+            paginator = Paginator(queryset, page_size)
+            page_obj = paginator.get_page(page)
+            
+            # 序列化数据
+            data = []
+            for item in page_obj:
+                data.append({
+                    'trade_date': item.trade_date.strftime('%Y-%m-%d'),
+                    'open': float(item.open_price),
+                    'high': float(item.high_price),
+                    'low': float(item.low_price),
+                    'close': float(item.close_price),
+                    'volume': int(item.volume),
+                    'amount': float(item.amount),
+                    'change_pct': float(item.change_pct) if item.change_pct else 0,
+                    'change_amount': float(item.change_amount) if item.change_amount else 0,
+                    'turnover_rate': float(item.turnover_rate) if item.turnover_rate else 0
+                })
+            
+            response_data = {
+                'data': data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'page_size': page_size,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }
+            
+            return self.success_response(response_data)
+            
+        except ValueError as e:
+            return self.error_response(f'参数错误: {str(e)}')
+        except Exception as e:
+            logger.error(f"获取每日历史数据失败: {str(e)}")
+            return self.error_response('获取每日历史数据失败')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StockWeeklyHistoryView(BaseAPIView):
+    """股票每周历史数据API"""
+    
+    def get(self, request):
+        """获取股票每周历史数据"""
+        try:
+            stock_code = request.GET.get('stock_code', '').strip()
+            start_date = request.GET.get('start_date', '').strip()
+            end_date = request.GET.get('end_date', '').strip()
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 100))
+            
+            if not stock_code:
+                return self.error_response('请提供股票代码')
+            
+            # 构建查询条件
+            queryset = StockWeeklyHistoryData.objects.filter(stock_code=stock_code)
+            
+            if start_date:
+                queryset = queryset.filter(trade_date__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(trade_date__lte=end_date)
+            
+            # 按日期倒序排列
+            queryset = queryset.order_by('-trade_date')
+            
+            # 分页
+            paginator = Paginator(queryset, page_size)
+            page_obj = paginator.get_page(page)
+            
+            # 序列化数据
+            data = []
+            for item in page_obj:
+                data.append({
+                    'trade_date': item.trade_date.strftime('%Y-%m-%d'),
+                    'open': float(item.open_price),
+                    'high': float(item.high_price),
+                    'low': float(item.low_price),
+                    'close': float(item.close_price),
+                    'volume': int(item.volume),
+                    'amount': float(item.amount),
+                    'change_pct': float(item.change_pct) if item.change_pct else 0,
+                    'change_amount': float(item.change_amount) if item.change_amount else 0,
+                    'turnover_rate': float(item.turnover_rate) if item.turnover_rate else 0
+                })
+            
+            response_data = {
+                'data': data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'page_size': page_size,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }
+            
+            return self.success_response(response_data)
+            
+        except ValueError as e:
+            return self.error_response(f'参数错误: {str(e)}')
+        except Exception as e:
+            logger.error(f"获取每周历史数据失败: {str(e)}")
+            return self.error_response('获取每周历史数据失败')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StockMonthlyHistoryView(BaseAPIView):
+    """股票每月历史数据API"""
+    
+    def get(self, request):
+        """获取股票每月历史数据"""
+        try:
+            stock_code = request.GET.get('stock_code', '').strip()
+            start_date = request.GET.get('start_date', '').strip()
+            end_date = request.GET.get('end_date', '').strip()
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 100))
+            
+            if not stock_code:
+                return self.error_response('请提供股票代码')
+            
+            # 构建查询条件
+            queryset = StockMonthlyHistoryData.objects.filter(stock_code=stock_code)
+            
+            if start_date:
+                queryset = queryset.filter(trade_date__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(trade_date__lte=end_date)
+            
+            # 按日期倒序排列
+            queryset = queryset.order_by('-trade_date')
+            
+            # 分页
+            paginator = Paginator(queryset, page_size)
+            page_obj = paginator.get_page(page)
+            
+            # 序列化数据
+            data = []
+            for item in page_obj:
+                data.append({
+                    'trade_date': item.trade_date.strftime('%Y-%m-%d'),
+                    'open': float(item.open_price),
+                    'high': float(item.high_price),
+                    'low': float(item.low_price),
+                    'close': float(item.close_price),
+                    'volume': int(item.volume),
+                    'amount': float(item.amount),
+                    'change_pct': float(item.change_pct) if item.change_pct else 0,
+                    'change_amount': float(item.change_amount) if item.change_amount else 0,
+                    'turnover_rate': float(item.turnover_rate) if item.turnover_rate else 0
+                })
+            
+            response_data = {
+                'data': data,
+                'pagination': {
+                    'current_page': page,
+                    'total_pages': paginator.num_pages,
+                    'total_count': paginator.count,
+                    'page_size': page_size,
+                    'has_next': page_obj.has_next(),
+                    'has_previous': page_obj.has_previous()
+                }
+            }
+            
+            return self.success_response(response_data)
+            
+        except ValueError as e:
+            return self.error_response(f'参数错误: {str(e)}')
+        except Exception as e:
+            logger.error(f"获取每月历史数据失败: {str(e)}")
+            return self.error_response('获取每月历史数据失败')
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class HistoryDataTaskView(BaseAPIView):
+    """历史数据采集任务管理API"""
+    
+    def get(self, request):
+        """获取历史数据采集任务状态"""
+        try:
+            from apps.tasks.services import history_data_task_service
+            from apps.tasks.models import DataUpdateTask
+            
+            task_type = request.GET.get('task_type', 'stock_history_qfq')
+            page = int(request.GET.get('page', 1))
+            page_size = int(request.GET.get('page_size', 20))
+            
+            # 获取对应类型的任务
+            try:
+                task = DataUpdateTask.objects.get(data_type=task_type)
+                # 获取任务执行记录
+                records = history_data_task_service.get_recent_executions(
+                    task_id=task.id,
+                    limit=page_size
+                )
+            except DataUpdateTask.DoesNotExist:
+                records = []
+            
+            # 获取总数（简化处理，实际应该从服务中获取）
+            total_count = len(records) if len(records) < page_size else page_size * page + 1
+            
+            response_data = {
+                'records': records,
+                'pagination': {
+                    'current_page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'has_next': len(records) == page_size
+                }
+            }
+            
+            return self.success_response(response_data)
+            
+        except Exception as e:
+            logger.error(f"获取任务状态失败: {str(e)}")
+            return self.error_response('获取任务状态失败')
+    
+    def post(self, request):
+        """创建历史数据采集任务"""
+        try:
+            from apps.tasks.services import history_data_task_service
+            
+            data = json.loads(request.body)
+            stock_codes = data.get('stock_codes', [])
+            task_type = data.get('task_type', 'stock_history_qfq')
+            
+            if not stock_codes:
+                return self.error_response('请提供股票代码列表')
+            
+            # 创建任务
+            result = history_data_task_service.create_task(
+                task_type=task_type,
+                stock_codes=stock_codes,
+                user_id=1  # 暂时使用固定用户ID
+            )
+            
+            if result.get('success'):
+                return self.success_response(
+                    data=result.get('data'),
+                    message=result.get('message', '任务创建成功，正在后台执行')
+                )
+            else:
+                return self.error_response(result.get('message', '创建任务失败'))
+            
+        except json.JSONDecodeError:
+            return self.error_response('请求数据格式错误')
+        except Exception as e:
+            logger.error(f"创建任务失败: {str(e)}")
+            return self.error_response('创建任务失败')
+    
+
 
 
 @method_decorator(csrf_exempt, name='dispatch')

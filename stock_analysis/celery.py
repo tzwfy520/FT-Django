@@ -35,6 +35,11 @@ app.conf.beat_schedule = {
         'task': 'apps.stocks.tasks.update_stock_history',
         'schedule': 'crontab(hour=17, minute=0)',  # 5:00 PM daily
     },
+    'collect-stock-history-qfq-data': {
+        'task': 'apps.stocks.tasks.collect_stock_history_qfq_data',
+        'schedule': 'crontab(hour=18, minute=0)',  # 6:00 PM daily
+        'kwargs': {'stock_codes': None, 'start_date': None, 'end_date': None},  # 采集所有活跃股票
+    },
 }
 
 app.conf.timezone = 'Asia/Shanghai'

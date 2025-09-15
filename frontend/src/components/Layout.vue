@@ -170,7 +170,18 @@ const menuItems = ref([
       { path: '/concept-sector/historical-data', title: '概念历史数据', icon: '📋' }
     ]
   },
-  {    path: '/stock',    title: '股票数据',    icon: '📈',    expanded: false,    children: [      { path: '/stock/overview', title: '股票概览', icon: '👁️' },      { path: '/stock/my-stocks', title: '自选股票', icon: '⭐' },      { path: '/stock/realtime-trading', title: '实时交易数据', icon: '⚡' },      { path: '/stock/historical-trading', title: '历史交易数据', icon: '📋' }    ]  },
+  {
+    path: '/stock',
+    title: '股票数据',
+    icon: '📈',
+    expanded: false,
+    children: [
+      { path: '/stock/overview', title: '股票概览', icon: '👁️' },
+      { path: '/stock/my-stocks', title: '自选股票', icon: '⭐' },
+      { path: '/stock/realtime-trading', title: '实时交易数据', icon: '⚡' },
+      { path: '/stock/historical-trading', title: '历史交易数据', icon: '📋' }
+    ]
+  },
   {
     path: '/realtime-monitor',
     title: '实时盯盘',

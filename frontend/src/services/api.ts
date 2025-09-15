@@ -90,7 +90,28 @@ export const stocksAPI = {
   
   // 获取历史数据
   getHistoryData: (stockCode: string, params?: any) => 
-    apiClient.get(`/stocks/history/${stockCode}/`, { params }),
+    apiClient.get('/stocks/history/', { params: { code: stockCode, ...params } }),
+  
+  // 获取每日历史数据（前复权）
+  getDailyHistoryData: (stockCode: string, params?: any) => 
+    apiClient.get('/stocks/history/daily/', { params: { stock_code: stockCode, ...params } }),
+  
+  // 获取每周历史数据（前复权）
+  getWeeklyHistoryData: (stockCode: string, params?: any) => 
+    apiClient.get('/stocks/history/weekly/', { params: { stock_code: stockCode, ...params } }),
+  
+  // 获取每月历史数据（前复权）
+  getMonthlyHistoryData: (stockCode: string, params?: any) => 
+    apiClient.get('/stocks/history/monthly/', { params: { stock_code: stockCode, ...params } }),
+  
+  // 历史数据采集任务管理
+  getHistoryTaskStatus: (taskId?: string) => {
+    const url = taskId ? `/stocks/tasks/history/${taskId}/` : '/stocks/tasks/history/'
+    return apiClient.get(url)
+  },
+  
+  createHistoryTask: (data: any) => 
+    apiClient.post('/stocks/tasks/history/', data),
   
   // 获取分钟数据
   getMinuteData: (stockCode: string, params?: any) => 
@@ -120,6 +141,14 @@ export const stocksAPI = {
   getWatchlist: (params?: any) => apiClient.get('/stocks/watchlist/', { params }),
   addToWatchlist: (data: any) => apiClient.post('/stocks/watchlist/', data),
   removeFromWatchlist: (data: any) => apiClient.delete('/stocks/watchlist/', { data }),
+  
+  // 行业板块相关
+  getIndustryList: (params?: any) => apiClient.get('/stocks/industries/', { params }),
+  getIndustryStocks: (params?: any) => apiClient.get('/stocks/industries/stocks/', { params }),
+  
+  // 概念板块相关
+  getConceptList: (params?: any) => apiClient.get('/stocks/concepts/', { params }),
+  getConceptStocks: (params?: any) => apiClient.get('/stocks/concepts/stocks/', { params }),
 }
 
 export const tasksAPI = {
@@ -135,6 +164,9 @@ export const tasksAPI = {
   
   // 删除任务定义
   deleteTaskDefinition: (id: number) => apiClient.delete(`/tasks/definitions/${id}/`),
+  
+  // 获取任务目标详情
+  getTaskTargetDetails: (id: number) => apiClient.get(`/tasks/definitions/${id}/target_details/`),
   
   // 获取任务执行记录
   getTaskExecutions: (params?: any) => apiClient.get('/tasks/executions/', { params }),

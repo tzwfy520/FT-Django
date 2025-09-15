@@ -19,11 +19,23 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // 启用 SPA 路由支持
+    fs: {
+      strict: false
+    },
     proxy: {
-      '/api': {
+      '^/api/.*': {
         target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false
+      }
+    }
+  },
+  // 配置构建选项
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined
       }
     }
   }

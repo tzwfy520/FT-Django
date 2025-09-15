@@ -99,7 +99,7 @@ class TaskExecution(models.Model):
         ('cancelled', '已取消'),
     ]
     
-    task = models.ForeignKey(ScheduledTask, on_delete=models.CASCADE, verbose_name='关联任务')
+    task = models.ForeignKey('TaskDefinition', on_delete=models.CASCADE, verbose_name='关联任务')
     execution_id = models.CharField(max_length=100, unique=True, verbose_name='执行ID')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='执行状态')
     
@@ -146,6 +146,7 @@ class DataUpdateTask(models.Model):
         ('stock_realtime', '股票实时数据'),
         ('stock_history', '股票历史数据'),
         ('stock_minute', '股票分时数据'),
+        ('stock_history_qfq', '历史数据-前复权'),
         ('market_realtime', '大盘实时数据'),
         ('market_history', '大盘历史数据'),
         ('industry_data', '行业数据'),
@@ -236,3 +237,17 @@ class TaskDependency(models.Model):
     
     def __str__(self):
         return f'{self.parent_task.name} -> {self.child_task.name}'
+
+
+# 导入增强模型以确保Django能识别它们
+try:
+    from .enhanced_models import (
+        TaskDefinition,
+        TaskExecutionEnhanced,
+        TaskLogEnhanced,
+        TaskDependencyEnhanced,
+        TaskScheduleEnhanced,
+        TaskMetricsEnhanced
+    )
+except ImportError:
+    pass  # 如果导入失败，忽略错误

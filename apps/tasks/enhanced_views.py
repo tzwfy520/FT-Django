@@ -10,16 +10,16 @@ from django_filters import rest_framework as filters
 import uuid
 
 from .enhanced_models import (
-    TaskCategory, TaskDefinition, TaskExecution, TaskLog, 
-    TaskDependency, TaskSchedule, TaskMetrics
+    TaskDefinition, TaskExecutionEnhanced, TaskLogEnhanced, 
+    TaskDependencyEnhanced, TaskScheduleEnhanced, TaskMetricsEnhanced
 )
+from .models import TaskCategory
 from .enhanced_serializers import (
     TaskCategorySerializer, TaskDefinitionListSerializer, TaskDefinitionDetailSerializer,
     TaskExecutionListSerializer, TaskExecutionDetailSerializer, TaskLogSerializer,
     TaskDependencySerializer, TaskScheduleSerializer, TaskMetricsSerializer,
     TaskExecutionCreateSerializer, TaskStatsSerializer, TaskExecutionFilterSerializer
 )
-from .task_scheduler import TaskScheduler
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -32,7 +32,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 class TaskExecutionFilter(filters.FilterSet):
     """任务执行记录过滤器"""
     task_name = filters.CharFilter(field_name='task__name', lookup_expr='icontains')
-    task_type = filters.ChoiceFilter(field_name='task__task_type', choices=[
+    trigger_method = filters.ChoiceFilter(field_name='task__trigger_method', choices=[
         ('periodic', '周期任务'),
         ('scheduled', '定时任务'),
         ('immediate', '立即任务'),
@@ -61,13 +61,13 @@ class TaskExecutionFilter(filters.FilterSet):
     date_range = filters.DateFromToRangeFilter(field_name='created_at')
     
     class Meta:
-        model = TaskExecution
+        model = TaskExecutionEnhanced
         fields = ['task', 'status', 'trigger_type', 'worker_name']
 
 
 class TaskCategoryViewSet(viewsets.ModelViewSet):
     """任务分类管理视图集"""
-    queryset = TaskCategory.objects.all().order_by('order', 'name')
+    queryset = TaskCategory.objects.all().order_by('name')
     serializer_class = TaskCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
@@ -90,7 +90,7 @@ class TaskDefinitionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['category', 'task_type', 'priority', 'status', 'is_active']
+    filterset_fields = ['category', 'trigger_method', 'priority', 'status', 'is_active']
     search_fields = ['name', 'description']
     ordering_fields = ['created_at', 'updated_at', 'last_execution_time', 'priority']
     ordering = ['-created_at']
@@ -214,11 +214,88 @@ class TaskDefinitionViewSet(viewsets.ModelViewSet):
             'recent_success_rate': (recent_success / recent_total * 100) if recent_total > 0 else 0,
             'recent_executions': recent_total
         })
+    
+    @action(detail=True, methods=['get'])
+    def target_details(self, request, pk=None):
+        """根据任务目标获取对应的详情清单"""
+        task = self.get_object()
+        task_target = task.task_target
+        
+        # 根据不同的任务目标返回对应的清单
+        if task_target == 'stock_data_update':
+            # 获取股票清单
+            from apps.stocks.models import Stock
+            stocks = Stock.objects.filter(is_active=True).values('code', 'name', 'market')
+            return Response({
+                'task_target': task_target,
+                'task_target_display': task.get_task_target_display(),
+                'items': list(stocks),
+                'total_count': stocks.count()
+            })
+        
+        elif task_target == 'industry_sector_update':
+            # 获取行业板块清单
+            from apps.stocks.models import IndustrySector
+            sectors = IndustrySector.objects.filter(is_active=True).values('code', 'name')
+            return Response({
+                'task_target': task_target,
+                'task_target_display': task.get_task_target_display(),
+                'items': list(sectors),
+                'total_count': sectors.count()
+            })
+        
+        elif task_target == 'concept_sector_update':
+            # 获取概念板块清单
+            from apps.stocks.models import ConceptSector
+            sectors = ConceptSector.objects.filter(is_active=True).values('code', 'name')
+            return Response({
+                'task_target': task_target,
+                'task_target_display': task.get_task_target_display(),
+                'items': list(sectors),
+                'total_count': sectors.count()
+            })
+        
+        elif task_target == 'market_data_update':
+            # 获取大盘数据清单
+            market_indices = [
+                {'code': '000001', 'name': '上证指数'},
+                {'code': '399001', 'name': '深证成指'},
+                {'code': '399006', 'name': '创业板指'},
+                {'code': '000300', 'name': '沪深300'},
+                {'code': '000905', 'name': '中证500'},
+                {'code': '000852', 'name': '中证1000'}
+            ]
+            return Response({
+                'task_target': task_target,
+                'task_target_display': task.get_task_target_display(),
+                'items': market_indices,
+                'total_count': len(market_indices)
+            })
+        
+        elif task_target == 'ai_analysis':
+            # AI分析任务的详情
+            return Response({
+                'task_target': task_target,
+                'task_target_display': task.get_task_target_display(),
+                'description': '执行AI分析相关任务，包括数据分析、模型训练等',
+                'items': [],
+                'total_count': 0
+            })
+        
+        else:
+            # 其他类型任务
+            return Response({
+                'task_target': task_target,
+                'task_target_display': task.get_task_target_display(),
+                'description': '其他类型任务',
+                'items': [],
+                'total_count': 0
+            })
 
 
 class TaskExecutionViewSet(viewsets.ModelViewSet):
     """任务执行记录管理视图集"""
-    queryset = TaskExecution.objects.select_related('task', 'triggered_by').all()
+    queryset = TaskExecutionEnhanced.objects.select_related('task', 'triggered_by').all()
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
@@ -404,7 +481,7 @@ class TaskExecutionViewSet(viewsets.ModelViewSet):
 
 class TaskLogViewSet(viewsets.ReadOnlyModelViewSet):
     """任务日志查看视图集"""
-    queryset = TaskLog.objects.select_related('task_execution__task').all()
+    queryset = TaskLogEnhanced.objects.select_related('task_execution__task').all()
     serializer_class = TaskLogSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
@@ -415,7 +492,7 @@ class TaskLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 class TaskDependencyViewSet(viewsets.ModelViewSet):
     """任务依赖关系管理视图集"""
-    queryset = TaskDependency.objects.select_related('parent_task', 'child_task').all()
+    queryset = TaskDependencyEnhanced.objects.select_related('parent_task', 'child_task').all()
     serializer_class = TaskDependencySerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
@@ -425,7 +502,7 @@ class TaskDependencyViewSet(viewsets.ModelViewSet):
 
 class TaskScheduleViewSet(viewsets.ModelViewSet):
     """任务调度配置管理视图集"""
-    queryset = TaskSchedule.objects.select_related('task').all()
+    queryset = TaskScheduleEnhanced.objects.select_related('task').all()
     serializer_class = TaskScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
@@ -447,7 +524,7 @@ class TaskScheduleViewSet(viewsets.ModelViewSet):
 
 class TaskMetricsViewSet(viewsets.ReadOnlyModelViewSet):
     """任务执行指标查看视图集"""
-    queryset = TaskMetrics.objects.select_related('task').all()
+    queryset = TaskMetricsEnhanced.objects.select_related('task').all()
     serializer_class = TaskMetricsSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination

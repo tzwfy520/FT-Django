@@ -14,7 +14,12 @@ urlpatterns = [
     path('realtime/', views.StockRealTimeDataView.as_view(), name='realtime_data'),
     path('realtime/<str:stock_code>/', views.StockRealTimeDataView.as_view(), name='realtime_data_detail'),
     
-    # 历史数据
+    # 历史交易数据（前复权）- 必须放在通用历史数据路由之前
+    path('history/daily/', views.StockDailyHistoryView.as_view(), name='daily_history'),
+    path('history/weekly/', views.StockWeeklyHistoryView.as_view(), name='weekly_history'),
+    path('history/monthly/', views.StockMonthlyHistoryView.as_view(), name='monthly_history'),
+    
+    # 历史数据（通用）
     path('history/', views.StockHistoryDataView.as_view(), name='history_data'),
     path('history/<str:stock_code>/', views.StockHistoryDataView.as_view(), name='history_data_detail'),
     
@@ -29,6 +34,17 @@ urlpatterns = [
     
     # 自选股
     path('watchlist/', views.WatchListView.as_view(), name='watchlist'),
+    
+    # 行业板块
+    path('industries/', views.IndustryListView.as_view(), name='industry_list'),
+    path('industries/stocks/', views.IndustryStocksView.as_view(), name='industry_stocks'),
+    
+    # 概念板块
+    path('concepts/', views.ConceptListView.as_view(), name='concept_list'),
+    path('concepts/stocks/', views.ConceptStocksView.as_view(), name='concept_stocks'),
+    
+    # 历史数据采集任务管理
+    path('tasks/history/', views.HistoryDataTaskView.as_view(), name='history_task'),
     
     # 以下视图暂未实现，先注释
     # path('minute/', views.StockMinuteDataView.as_view(), name='minute_data'),

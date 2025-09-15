@@ -156,3 +156,102 @@ class StockAlert(models.Model):
     
     def __str__(self):
         return f'{self.stock.stock_code} - {self.get_alert_type_display()}'
+
+
+class StockDailyHistoryData(models.Model):
+    """股票每日历史数据表（前复权）"""
+    stock_code = models.CharField(max_length=10, verbose_name='股票代码')
+    trade_date = models.DateField(verbose_name='交易日期')
+    open_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='开盘价')
+    close_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='收盘价')
+    high_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='最高价')
+    low_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='最低价')
+    volume = models.BigIntegerField(verbose_name='成交量(手)')
+    amount = models.DecimalField(max_digits=20, decimal_places=2, verbose_name='成交额(元)')
+    amplitude = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name='振幅(%)')
+    change_pct = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name='涨跌幅(%)')
+    change_amount = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='涨跌额(元)')
+    turnover_rate = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name='换手率(%)')
+    
+    # 任务执行时间
+    task_start_time = models.DateTimeField(null=True, blank=True, verbose_name='任务开始时间')
+    task_end_time = models.DateTimeField(null=True, blank=True, verbose_name='任务结束时间')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    
+    class Meta:
+        db_table = 'stock_daily_history_data'
+        verbose_name = '股票每日历史数据'
+        verbose_name_plural = '股票每日历史数据'
+        ordering = ['-trade_date']
+        unique_together = ['stock_code', 'trade_date']
+    
+    def __str__(self):
+        return f'{self.stock_code} - {self.trade_date}'
+
+
+class StockWeeklyHistoryData(models.Model):
+    """股票每周历史数据表（前复权）"""
+    stock_code = models.CharField(max_length=10, verbose_name='股票代码')
+    trade_date = models.DateField(verbose_name='交易日期')
+    open_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='开盘价')
+    close_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='收盘价')
+    high_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='最高价')
+    low_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='最低价')
+    volume = models.BigIntegerField(verbose_name='成交量(手)')
+    amount = models.DecimalField(max_digits=20, decimal_places=2, verbose_name='成交额(元)')
+    amplitude = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name='振幅(%)')
+    change_pct = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name='涨跌幅(%)')
+    change_amount = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='涨跌额(元)')
+    turnover_rate = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name='换手率(%)')
+    
+    # 任务执行时间
+    task_start_time = models.DateTimeField(null=True, blank=True, verbose_name='任务开始时间')
+    task_end_time = models.DateTimeField(null=True, blank=True, verbose_name='任务结束时间')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    
+    class Meta:
+        db_table = 'stock_weekly_history_data'
+        verbose_name = '股票每周历史数据'
+        verbose_name_plural = '股票每周历史数据'
+        ordering = ['-trade_date']
+        unique_together = ['stock_code', 'trade_date']
+    
+    def __str__(self):
+        return f'{self.stock_code} - {self.trade_date}'
+
+
+class StockMonthlyHistoryData(models.Model):
+    """股票每月历史数据表（前复权）"""
+    stock_code = models.CharField(max_length=10, verbose_name='股票代码')
+    trade_date = models.DateField(verbose_name='交易日期')
+    open_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='开盘价')
+    close_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='收盘价')
+    high_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='最高价')
+    low_price = models.DecimalField(max_digits=12, decimal_places=4, verbose_name='最低价')
+    volume = models.BigIntegerField(verbose_name='成交量(手)')
+    amount = models.DecimalField(max_digits=20, decimal_places=2, verbose_name='成交额(元)')
+    amplitude = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name='振幅(%)')
+    change_pct = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name='涨跌幅(%)')
+    change_amount = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name='涨跌额(元)')
+    turnover_rate = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name='换手率(%)')
+    
+    # 任务执行时间
+    task_start_time = models.DateTimeField(null=True, blank=True, verbose_name='任务开始时间')
+    task_end_time = models.DateTimeField(null=True, blank=True, verbose_name='任务结束时间')
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    
+    class Meta:
+        db_table = 'stock_monthly_history_data'
+        verbose_name = '股票每月历史数据'
+        verbose_name_plural = '股票每月历史数据'
+        ordering = ['-trade_date']
+        unique_together = ['stock_code', 'trade_date']
+    
+    def __str__(self):
+        return f'{self.stock_code} - {self.trade_date}'

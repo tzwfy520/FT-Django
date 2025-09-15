@@ -74,15 +74,24 @@ class AkshareClient:
         
         Args:
             symbol: 股票代码
-            start_date: 开始日期 YYYY-MM-DD
-            end_date: 结束日期 YYYY-MM-DD
+            start_date: 开始日期 YYYY-MM-DD 或 YYYYMMDD
+            end_date: 结束日期 YYYY-MM-DD 或 YYYYMMDD
             period: 周期 daily/weekly/monthly
             adjust: 复权类型 qfq前复权/hfq后复权/空字符串不复权
         """
         if not start_date:
             start_date = (datetime.now() - timedelta(days=365)).strftime('%Y%m%d')
+        else:
+            # 转换日期格式为YYYYMMDD
+            if '-' in start_date:
+                start_date = start_date.replace('-', '')
+        
         if not end_date:
             end_date = datetime.now().strftime('%Y%m%d')
+        else:
+            # 转换日期格式为YYYYMMDD
+            if '-' in end_date:
+                end_date = end_date.replace('-', '')
         
         return self._safe_request(
             ak.stock_zh_a_hist,

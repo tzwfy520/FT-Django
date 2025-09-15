@@ -1,11 +1,12 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
+from apps.system.spa_views import SPAView
 
 # Swagger/OpenAPI schema
 schema_view = get_schema_view(
@@ -26,7 +27,6 @@ def redirect_to_swagger(request):
     return redirect('schema-swagger-ui')
 
 urlpatterns = [
-    path('', redirect_to_swagger, name='home'),
     path('admin/', admin.site.urls),
     
     # Authentication URLs
@@ -39,7 +39,7 @@ urlpatterns = [
     
     # 以下应用暂未创建，先注释
     # path('api/v1/market/', include('apps.market.urls')),
-    # path('api/v1/tasks/', include('apps.tasks.urls')),
+    path('api/v1/tasks/', include('apps.tasks.enhanced_urls')),
     # path('api/v1/analysis/', include('apps.analysis.urls')),
     path('api/v1/system/', include('apps.system.urls')),
     # path('api/v1/ai/', include('apps.ai.urls')),
@@ -48,7 +48,15 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('api/schema/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    
+    # 根路径重定向到前端应用
+    path('', SPAView.as_view(), name='home'),
 ]
+
+# 只在生产环境添加catch-all模式
+if not settings.DEBUG:
+    # Catch-all pattern for frontend routes (must be last in production)
+    urlpatterns.append(re_path(r'^.*/$', SPAView.as_view(), name='spa_catchall'))
 
 # Serve static and media files in development
 if settings.DEBUG:

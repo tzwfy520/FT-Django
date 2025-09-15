@@ -1,3 +1,7 @@
+# 环境
+.env
+.env.test
+
 # Logs
 logs
 *.log

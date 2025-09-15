@@ -20,10 +20,10 @@ router.register(r'metrics', TaskMetricsViewSet, basename='task-metrics')
 # URL配置
 urlpatterns = [
     # API路由
-    path('api/v1/tasks/', include(router.urls)),
+    path('', include(router.urls)),
     
     # 额外的自定义路由可以在这里添加
-    # path('api/v1/tasks/custom-endpoint/', custom_view, name='custom-endpoint'),
+    # path('custom-endpoint/', custom_view, name='custom-endpoint'),
 ]
 
 # 为了方便调试，添加路由列表

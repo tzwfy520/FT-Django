@@ -7,13 +7,23 @@ import uuid
 from enum import Enum
 
 
-class TaskTypeEnum(models.TextChoices):
-    """任务类型枚举"""
-    PERIODIC = 'periodic', '周期任务'
-    SCHEDULED = 'scheduled', '定时任务'
-    IMMEDIATE = 'immediate', '立即执行'
-    SPECIAL = 'special', '特殊任务'
-    DEPENDENT = 'dependent', '依赖任务'
+class TriggerMethodEnum(models.TextChoices):
+    """触发方式枚举"""
+    PERIODIC = 'periodic', '周期触发'
+    SCHEDULED = 'scheduled', '定时触发'
+    IMMEDIATE = 'immediate', '立即触发'
+    MANUAL = 'manual', '手动触发'
+    DEPENDENT = 'dependent', '依赖触发'
+
+
+class TaskTargetEnum(models.TextChoices):
+    """任务目标枚举"""
+    STOCK_DATA_UPDATE = 'stock_data_update', '股票数据更新'
+    INDUSTRY_SECTOR_UPDATE = 'industry_sector_update', '行业板块更新'
+    CONCEPT_SECTOR_UPDATE = 'concept_sector_update', '概念板块更新'
+    MARKET_DATA_UPDATE = 'market_data_update', '大盘数据更新'
+    AI_ANALYSIS = 'ai_analysis', 'AI分析'
+    OTHER = 'other', '其他'
 
 
 class TaskStatusEnum(models.TextChoices):
@@ -45,27 +55,6 @@ class PriorityEnum(models.TextChoices):
     CRITICAL = 'critical', '紧急'
 
 
-class TaskCategory(models.Model):
-    """任务分类表"""
-    name = models.CharField(max_length=50, unique=True, verbose_name='分类名称')
-    description = models.TextField(blank=True, verbose_name='描述')
-    color = models.CharField(max_length=7, default='#007bff', verbose_name='显示颜色')
-    icon = models.CharField(max_length=50, blank=True, verbose_name='图标')
-    sort_order = models.IntegerField(default=0, verbose_name='排序')
-    is_active = models.BooleanField(default=True, verbose_name='是否有效')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
-    
-    class Meta:
-        db_table = 'task_category_enhanced'
-        verbose_name = '任务分类'
-        verbose_name_plural = '任务分类'
-        ordering = ['sort_order', 'name']
-    
-    def __str__(self):
-        return self.name
-
-
 class TaskDefinition(models.Model):
     """任务定义表 - 统一管理所有类型的任务"""
     
@@ -73,10 +62,14 @@ class TaskDefinition(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100, unique=True, verbose_name='任务名称')
     description = models.TextField(blank=True, verbose_name='任务描述')
-    category = models.ForeignKey(TaskCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='任务分类')
+    category = models.ForeignKey('TaskCategory', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='任务分类')
     
-    # 任务类型和配置
-    task_type = models.CharField(max_length=20, choices=TaskTypeEnum.choices, verbose_name='任务类型')
+    # 触发方式和任务目标
+    trigger_method = models.CharField(max_length=20, choices=TriggerMethodEnum.choices, verbose_name='触发方式')
+    task_target = models.CharField(max_length=50, choices=TaskTargetEnum.choices, verbose_name='任务目标')
+    stock_targets = models.TextField(blank=True, verbose_name='股票目标列表(JSON格式)')
+    
+    # 任务配置
     task_module = models.CharField(max_length=200, verbose_name='任务模块路径')
     task_function = models.CharField(max_length=100, verbose_name='任务函数名')
     task_args = models.TextField(blank=True, verbose_name='任务参数(JSON格式)')
@@ -123,9 +116,10 @@ class TaskDefinition(models.Model):
         verbose_name_plural = '任务定义'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['task_type', 'status']),
+            models.Index(fields=['trigger_method', 'status']),
             models.Index(fields=['is_active', 'next_execution_time']),
             models.Index(fields=['category', 'created_at']),
+            models.Index(fields=['task_target']),
         ]
     
     def __str__(self):
@@ -151,20 +145,33 @@ class TaskDefinition(models.Model):
             return 0
         return round(self.success_executions / self.total_executions * 100, 2)
     
+    def get_stock_targets(self):
+        """获取股票目标列表"""
+        if self.stock_targets:
+            try:
+                return json.loads(self.stock_targets)
+            except json.JSONDecodeError:
+                return []
+        return []
+    
+    def set_stock_targets(self, targets_list):
+        """设置股票目标列表"""
+        self.stock_targets = json.dumps(targets_list, ensure_ascii=False)
+    
     def is_periodic(self):
-        """是否为周期任务"""
-        return self.task_type == TaskTypeEnum.PERIODIC
+        """是否为周期触发"""
+        return self.trigger_method == TriggerMethodEnum.PERIODIC
     
     def is_scheduled(self):
-        """是否为定时任务"""
-        return self.task_type == TaskTypeEnum.SCHEDULED
+        """是否为定时触发"""
+        return self.trigger_method == TriggerMethodEnum.SCHEDULED
     
-    def is_special(self):
-        """是否为特殊任务"""
-        return self.task_type == TaskTypeEnum.SPECIAL
+    def is_stock_data_task(self):
+        """是否为股票数据更新任务"""
+        return self.task_target == TaskTargetEnum.STOCK_DATA_UPDATE
 
 
-class TaskExecution(models.Model):
+class TaskExecutionEnhanced(models.Model):
     """任务执行记录表 - 增强版"""
     
     # 基本信息
@@ -251,7 +258,7 @@ class TaskExecution(models.Model):
                 self.retry_count < self.max_retries)
 
 
-class TaskLog(models.Model):
+class TaskLogEnhanced(models.Model):
     """任务日志表 - 增强版"""
     LOG_LEVELS = [
         ('DEBUG', 'DEBUG'),
@@ -262,7 +269,7 @@ class TaskLog(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    task_execution = models.ForeignKey(TaskExecution, on_delete=models.CASCADE, verbose_name='任务执行记录')
+    task_execution = models.ForeignKey(TaskExecutionEnhanced, on_delete=models.CASCADE, verbose_name='任务执行记录')
     level = models.CharField(max_length=10, choices=LOG_LEVELS, verbose_name='日志级别')
     message = models.TextField(verbose_name='日志消息')
     
@@ -292,7 +299,7 @@ class TaskLog(models.Model):
         return f'{self.level} - {self.message[:50]}'
 
 
-class TaskDependency(models.Model):
+class TaskDependencyEnhanced(models.Model):
     """任务依赖关系表"""
     DEPENDENCY_TYPES = [
         ('success', '成功后执行'),
@@ -322,7 +329,7 @@ class TaskDependency(models.Model):
         return f'{self.parent_task.name} -> {self.child_task.name}'
 
 
-class TaskSchedule(models.Model):
+class TaskScheduleEnhanced(models.Model):
     """任务调度配置表"""
     SCHEDULE_TYPES = [
         ('interval', '间隔调度'),
@@ -365,7 +372,7 @@ class TaskSchedule(models.Model):
         return f'{self.task.name} - {self.schedule_type}'
 
 
-class TaskMetrics(models.Model):
+class TaskMetricsEnhanced(models.Model):
     """任务执行指标表"""
     task = models.ForeignKey(TaskDefinition, on_delete=models.CASCADE, verbose_name='关联任务')
     date = models.DateField(verbose_name='日期')

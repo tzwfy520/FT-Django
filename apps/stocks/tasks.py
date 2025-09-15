@@ -6,6 +6,7 @@ import akshare as ak
 from .models import StockBasicInfo, StockRealtimeData, StockHistoryData
 from utils.akshare_client import AkshareClient
 from utils.data_processor import DataProcessor
+from .services.history_data_service import HistoryDataService
 
 logger = logging.getLogger(__name__)
 
@@ -246,3 +247,69 @@ def cleanup_old_data(self):
     except Exception as exc:
         logger.error(f"清理过期数据失败: {str(exc)}")
         raise exc
+
+
+@shared_task(bind=True, max_retries=3)
+def collect_stock_history_qfq_data(self, symbols=None, periods=None):
+    """
+    采集股票历史数据-前复权
+    
+    Args:
+        symbols: 股票代码列表，如果为None则采集所有活跃股票
+        periods: 数据周期列表，默认为['daily', 'weekly', 'monthly']
+    """
+    try:
+        logger.info("开始执行历史数据-前复权采集任务")
+        
+        history_service = HistoryDataService()
+        
+        if symbols is None:
+            # 采集所有活跃股票
+            results = history_service.collect_all_stocks_history_data(periods)
+        else:
+            # 采集指定股票
+            results = history_service.collect_stock_history_data(symbols, periods)
+        
+        # 统计结果
+        total_stocks = len(results)
+        total_records = 0
+        success_count = 0
+        
+        for symbol, periods_result in results.items():
+            stock_total = sum(periods_result.values())
+            total_records += stock_total
+            if stock_total > 0:
+                success_count += 1
+        
+        logger.info(f"历史数据采集完成: 处理股票 {total_stocks} 只，成功 {success_count} 只，共采集 {total_records} 条记录")
+        
+        return {
+            'status': 'success',
+            'total_stocks': total_stocks,
+            'success_stocks': success_count,
+            'total_records': total_records,
+            'details': results
+        }
+        
+    except Exception as exc:
+        logger.error(f"历史数据采集任务失败: {str(exc)}")
+        # 重试机制
+        if self.request.retries < self.max_retries:
+            logger.info(f"任务重试 {self.request.retries + 1}/{self.max_retries}")
+            raise self.retry(countdown=60 * (self.request.retries + 1), exc=exc)
+        else:
+            logger.error("任务重试次数已达上限，任务失败")
+            raise exc
+
+
+@shared_task(bind=True)
+def collect_specific_stocks_history_data(self, symbols, periods=None):
+    """
+    采集指定股票的历史数据
+    
+    Args:
+        symbols: 股票代码列表
+        periods: 数据周期列表
+    """
+    # 直接调用任务函数，而不是通过Celery异步调用
+    return collect_stock_history_qfq_data(symbols, periods)

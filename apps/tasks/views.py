@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 import json
 import logging
 
-from .models import TaskDefinition, TaskExecution, TaskSchedule, TaskDependency
+from .models import TaskDefinition, TaskCategory, TaskExecution, ScheduledTask
+from .enhanced_models import TaskExecutionEnhanced, TaskScheduleEnhanced, TaskDependencyEnhanced
 from apps.stocks.models import StockBasicInfo
 
 logger = logging.getLogger(__name__)
@@ -56,15 +57,19 @@ class TaskDefinitionView(BaseAPIView):
             # 获取查询参数
             page = int(request.GET.get('page', 1))
             page_size = int(request.GET.get('page_size', 20))
-            task_type = request.GET.get('type', '').strip()
+            trigger_method = request.GET.get('trigger_method', '').strip()
+            task_target = request.GET.get('task_target', '').strip()
             is_active = request.GET.get('is_active', '').strip()
             search = request.GET.get('search', '').strip()
             
             # 构建查询条件
             queryset = TaskDefinition.objects.all()
             
-            if task_type:
-                queryset = queryset.filter(task_type=task_type)
+            if trigger_method:
+                queryset = queryset.filter(trigger_method=trigger_method)
+            
+            if task_target:
+                queryset = queryset.filter(task_target=task_target)
             
             if is_active:
                 queryset = queryset.filter(is_active=is_active.lower() == 'true')
@@ -86,22 +91,24 @@ class TaskDefinitionView(BaseAPIView):
             tasks = []
             for task in page_obj:
                 # 获取最近执行记录
-                latest_execution = task.executions.order_by('-created_at').first()
+                latest_execution = TaskExecutionEnhanced.objects.filter(task=task).order_by('-created_at').first()
                 
                 tasks.append({
                     'id': task.id,
                     'name': task.name,
-                    'task_type': task.task_type,
+                    'trigger_method': task.trigger_method,
+                    'task_target': task.task_target,
+                    'stock_targets': task.get_stock_targets() if task.is_stock_data_task() else None,
                     'description': task.description,
-                    'config': task.config,
+                    'task_args': task.task_args,
                     'is_active': task.is_active,
                     'priority': task.priority,
-                    'timeout': task.timeout,
-                    'retry_count': task.retry_count,
+                    'timeout': task.timeout_seconds,
+                    'retry_count': task.max_retries,
                     'latest_execution': {
                         'status': latest_execution.status if latest_execution else None,
-                        'started_at': latest_execution.started_at.strftime('%Y-%m-%d %H:%M:%S') if latest_execution and latest_execution.started_at else None,
-                        'completed_at': latest_execution.completed_at.strftime('%Y-%m-%d %H:%M:%S') if latest_execution and latest_execution.completed_at else None
+                        'started_at': latest_execution.start_time.strftime('%Y-%m-%d %H:%M:%S') if latest_execution and latest_execution.start_time else None,
+                        'completed_at': latest_execution.end_time.strftime('%Y-%m-%d %H:%M:%S') if latest_execution and latest_execution.end_time else None
                     } if latest_execution else None,
                     'created_at': task.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                     'updated_at': task.updated_at.strftime('%Y-%m-%d %H:%M:%S')
@@ -131,9 +138,11 @@ class TaskDefinitionView(BaseAPIView):
             data = json.loads(request.body)
             
             name = data.get('name', '').strip()
-            task_type = data.get('task_type', '').strip()
+            trigger_method = data.get('trigger_method', '').strip()
+            task_target = data.get('task_target', '').strip()
             description = data.get('description', '').strip()
-            config = data.get('config', {})
+            task_args = data.get('task_args', {})
+            stock_targets = data.get('stock_targets', [])
             priority = data.get('priority', 5)
             timeout = data.get('timeout', 3600)
             retry_count = data.get('retry_count', 3)
@@ -141,8 +150,15 @@ class TaskDefinitionView(BaseAPIView):
             if not name:
                 return self.error_response('请提供任务名称')
             
-            if not task_type:
-                return self.error_response('请提供任务类型')
+            if not trigger_method:
+                return self.error_response('请提供触发方式')
+            
+            if not task_target:
+                return self.error_response('请提供任务目标')
+            
+            # 如果任务目标是股票数据更新，必须提供股票目标列表
+            if task_target == 'stock_data_update' and not stock_targets:
+                return self.error_response('股票数据更新任务必须提供股票目标列表')
             
             # 检查任务名称是否已存在
             if TaskDefinition.objects.filter(name=name).exists():
@@ -151,18 +167,26 @@ class TaskDefinitionView(BaseAPIView):
             # 创建任务定义
             task = TaskDefinition.objects.create(
                 name=name,
-                task_type=task_type,
+                trigger_method=trigger_method,
+                task_target=task_target,
                 description=description,
-                config=config,
+                task_args=task_args,
                 priority=priority,
-                timeout=timeout,
-                retry_count=retry_count
+                timeout_seconds=timeout,
+                max_retries=retry_count
             )
+            
+            # 如果有股票目标列表，设置股票目标
+            if stock_targets:
+                task.set_stock_targets(stock_targets)
+                task.save()
             
             return self.success_response({
                 'id': task.id,
                 'name': task.name,
-                'task_type': task.task_type,
+                'trigger_method': task.trigger_method,
+                'task_target': task.task_target,
+                'stock_targets': task.get_stock_targets() if task.is_stock_data_task() else None,
                 'description': task.description,
                 'created_at': task.created_at.strftime('%Y-%m-%d %H:%M:%S')
             }, '任务创建成功')
@@ -198,8 +222,19 @@ class TaskDefinitionView(BaseAPIView):
             if 'description' in data:
                 task.description = data['description'].strip()
             
-            if 'config' in data:
-                task.config = data['config']
+            if 'trigger_method' in data:
+                task.trigger_method = data['trigger_method']
+            
+            if 'task_target' in data:
+                task.task_target = data['task_target']
+            
+            if 'task_args' in data:
+                task.task_args = data['task_args']
+            
+            if 'stock_targets' in data:
+                stock_targets = data['stock_targets']
+                if isinstance(stock_targets, list):
+                    task.set_stock_targets(stock_targets)
             
             if 'is_active' in data:
                 task.is_active = data['is_active']
@@ -274,7 +309,7 @@ class TaskExecutionView(BaseAPIView):
             date_to = request.GET.get('date_to', '').strip()
             
             # 构建查询条件
-            queryset = TaskExecution.objects.select_related('task')
+            queryset = TaskExecutionEnhanced.objects.select_related('task')
             
             if task_id:
                 queryset = queryset.filter(task_id=task_id)
@@ -373,12 +408,44 @@ class TaskExecutionView(BaseAPIView):
             # 创建执行记录
             execution = TaskExecution.objects.create(
                 task=task,
-                parameters=parameters,
+                execution_id=f"exec_{task.id}_{int(datetime.now().timestamp())}",
                 status='pending'
             )
             
-            # 这里应该触发异步任务执行
-            # 暂时返回创建成功的响应
+            # 触发异步任务执行
+            try:
+                # 根据任务定义执行相应的Celery任务
+                if task.task_function == 'collect_specific_stocks_history_data':
+                    from apps.stocks.tasks import collect_specific_stocks_history_data
+                    
+                    # 从参数中获取股票代码
+                    symbols = parameters.get('symbols', ['000002'])
+                    periods = parameters.get('periods', ['daily'])
+                    
+                    # 提交Celery任务
+                    celery_task = collect_specific_stocks_history_data.delay(
+                        symbols=symbols,
+                        periods=periods
+                    )
+                    
+                    # 更新执行记录状态
+                    execution.status = 'running'
+                    execution.start_time = datetime.now()
+                    execution.save()
+                    
+                    logger.info(f"已提交Celery任务: {celery_task.id}，执行ID: {execution.execution_id}")
+                    
+                else:
+                    logger.warning(f"未知的任务函数: {task.task_function}")
+                    execution.status = 'failed'
+                    execution.error_message = f"未知的任务函数: {task.task_function}"
+                    execution.save()
+                    
+            except Exception as e:
+                logger.error(f"启动任务失败: {str(e)}")
+                execution.status = 'failed'
+                execution.error_message = str(e)
+                execution.save()
             
             return self.success_response({
                 'execution_id': execution.id,
@@ -408,7 +475,7 @@ class TaskScheduleView(BaseAPIView):
             is_active = request.GET.get('is_active', '').strip()
             
             # 构建查询条件
-            queryset = TaskSchedule.objects.select_related('task')
+            queryset = TaskScheduleEnhanced.objects.select_related('task')
             
             if task_id:
                 queryset = queryset.filter(task_id=task_id)
@@ -522,34 +589,34 @@ def task_stats(request):
         # 基础统计
         total_tasks = TaskDefinition.objects.count()
         active_tasks = TaskDefinition.objects.filter(is_active=True).count()
-        total_executions = TaskExecution.objects.count()
+        total_executions = TaskExecutionEnhanced.objects.count()
         
         # 执行状态统计
-        execution_stats = TaskExecution.objects.values('status').annotate(
+        execution_stats = TaskExecutionEnhanced.objects.values('status').annotate(
             count=Count('id')
         ).order_by('status')
         
         # 最近24小时执行统计
         yesterday = datetime.now() - timedelta(hours=24)
-        recent_executions = TaskExecution.objects.filter(
+        recent_executions = TaskExecutionEnhanced.objects.filter(
             created_at__gte=yesterday
         ).count()
         
         # 成功率统计
-        completed_executions = TaskExecution.objects.filter(status='completed').count()
+        completed_executions = TaskExecutionEnhanced.objects.filter(status='success').count()
         success_rate = round(completed_executions / total_executions * 100, 2) if total_executions > 0 else 0
         
-        # 按任务类型统计
-        task_type_stats = TaskDefinition.objects.values('task_type').annotate(
+        # 按任务目标统计
+        task_target_stats = TaskDefinition.objects.values('task_target').annotate(
             count=Count('id')
         ).order_by('-count')
         
         # 正在运行的任务
-        running_tasks = TaskExecution.objects.filter(status='running').count()
+        running_tasks = TaskExecutionEnhanced.objects.filter(status='running').count()
         
         # 调度统计
-        total_schedules = TaskSchedule.objects.count()
-        active_schedules = TaskSchedule.objects.filter(is_active=True).count()
+        total_schedules = TaskScheduleEnhanced.objects.count()
+        active_schedules = TaskScheduleEnhanced.objects.filter(is_active=True).count()
         
         stats = {
             'total_tasks': total_tasks,
@@ -561,7 +628,7 @@ def task_stats(request):
             'total_schedules': total_schedules,
             'active_schedules': active_schedules,
             'execution_stats': list(execution_stats),
-            'task_type_stats': list(task_type_stats)
+            'task_target_stats': list(task_target_stats)
         }
         
         return JsonResponse({

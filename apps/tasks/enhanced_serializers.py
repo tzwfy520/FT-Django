@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .enhanced_models import (
-    TaskCategory, TaskDefinition, TaskExecution, TaskLog, 
-    TaskDependency, TaskSchedule, TaskMetrics
+    TaskDefinition, TaskExecutionEnhanced, TaskLogEnhanced, 
+    TaskDependencyEnhanced, TaskScheduleEnhanced, TaskMetricsEnhanced
 )
+from .models import TaskCategory
 from croniter import croniter
 from datetime import datetime, timedelta
 import json
@@ -28,15 +29,20 @@ class TaskDefinitionListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.username', read_only=True)
     success_rate = serializers.ReadOnlyField()
+    stock_targets_list = serializers.SerializerMethodField()
     
     class Meta:
         model = TaskDefinition
         fields = [
-            'id', 'name', 'description', 'task_type', 'category_name', 
-            'priority', 'status', 'is_active', 'success_rate',
+            'id', 'name', 'description', 'trigger_method', 'task_target', 'category_name', 
+            'priority', 'status', 'is_active', 'success_rate', 'stock_targets_list',
             'total_executions', 'success_executions', 'failed_executions',
             'last_execution_time', 'next_execution_time', 'created_by_name', 'created_at'
         ]
+    
+    def get_stock_targets_list(self, obj):
+        """获取股票目标列表"""
+        return obj.get_stock_targets()
 
 
 class TaskDefinitionDetailSerializer(serializers.ModelSerializer):
@@ -44,8 +50,8 @@ class TaskDefinitionDetailSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.username', read_only=True)
     task_args_dict = serializers.SerializerMethodField()
+    stock_targets_list = serializers.SerializerMethodField()
     success_rate = serializers.ReadOnlyField()
-    next_run_time = serializers.SerializerMethodField()
     
     class Meta:
         model = TaskDefinition
@@ -58,6 +64,23 @@ class TaskDefinitionDetailSerializer(serializers.ModelSerializer):
     def get_task_args_dict(self, obj):
         """获取任务参数字典"""
         return obj.get_task_args()
+    
+    def get_stock_targets_list(self, obj):
+        """获取股票目标列表"""
+        return obj.get_stock_targets()
+    
+    def validate_stock_targets(self, value):
+        """验证股票目标列表格式"""
+        if value:
+            try:
+                import json
+                targets = json.loads(value) if isinstance(value, str) else value
+                if not isinstance(targets, list):
+                    raise serializers.ValidationError("股票目标必须是列表格式")
+                return value
+            except (json.JSONDecodeError, TypeError):
+                raise serializers.ValidationError("股票目标格式不正确")
+        return value
     
     def get_next_run_time(self, obj):
         """计算下次执行时间"""
@@ -98,13 +121,14 @@ class TaskDefinitionDetailSerializer(serializers.ModelSerializer):
 class TaskExecutionListSerializer(serializers.ModelSerializer):
     """任务执行记录列表序列化器"""
     task_name = serializers.CharField(source='task.name', read_only=True)
-    task_type = serializers.CharField(source='task.task_type', read_only=True)
+    trigger_method = serializers.CharField(source='task.trigger_method', read_only=True)
+    task_target = serializers.CharField(source='task.task_target', read_only=True)
     triggered_by_name = serializers.CharField(source='triggered_by.username', read_only=True)
     
     class Meta:
-        model = TaskExecution
+        model = TaskExecutionEnhanced
         fields = [
-            'id', 'execution_id', 'task_name', 'task_type', 'status',
+            'id', 'execution_id', 'task_name', 'trigger_method', 'task_target', 'status',
             'scheduled_time', 'start_time', 'end_time', 'duration_seconds',
             'retry_count', 'trigger_type', 'triggered_by_name', 'worker_name',
             'created_at'
@@ -121,7 +145,7 @@ class TaskExecutionDetailSerializer(serializers.ModelSerializer):
     can_retry = serializers.ReadOnlyField()
     
     class Meta:
-        model = TaskExecution
+        model = TaskExecutionEnhanced
         fields = '__all__'
         read_only_fields = (
             'task', 'execution_id', 'scheduled_time', 'start_time', 
@@ -135,7 +159,7 @@ class TaskLogSerializer(serializers.ModelSerializer):
     execution_id = serializers.CharField(source='task_execution.execution_id', read_only=True)
     
     class Meta:
-        model = TaskLog
+        model = TaskLogEnhanced
         fields = '__all__'
         read_only_fields = ('timestamp',)
 
@@ -146,7 +170,7 @@ class TaskDependencySerializer(serializers.ModelSerializer):
     child_task_name = serializers.CharField(source='child_task.name', read_only=True)
     
     class Meta:
-        model = TaskDependency
+        model = TaskDependencyEnhanced
         fields = '__all__'
         read_only_fields = ('created_at',)
     
@@ -187,7 +211,7 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
     next_run_time_calculated = serializers.SerializerMethodField()
     
     class Meta:
-        model = TaskSchedule
+        model = TaskScheduleEnhanced
         fields = '__all__'
         read_only_fields = ('last_run_time', 'created_at', 'updated_at')
     
@@ -224,7 +248,7 @@ class TaskMetricsSerializer(serializers.ModelSerializer):
     success_rate = serializers.ReadOnlyField()
     
     class Meta:
-        model = TaskMetrics
+        model = TaskMetricsEnhanced
         fields = '__all__'
         read_only_fields = ('created_at',)
 

@@ -1,5 +1,14 @@
 <template>
   <div class="aihubmix-management">
+    <div class="page-header">
+      <h2>推理时代接口管理</h2>
+      <div class="header-actions">
+        <el-button @click="loadInterfaces" :loading="loading">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
+    </div>
     <div class="content">
       <!-- API Token 管理表格 -->
       <el-card class="token-card" style="margin-bottom: 20px;">
@@ -284,7 +293,7 @@ import apiClient, { apiManagementAPI } from '@/services/api'
 import TokenModal from './components/TokenModal.vue'
 import InterfaceModal from './components/InterfaceModal.vue'
 import TestModal from './components/TestModal.vue'
-import { Hide, View, Check, Plus, Setting } from '@element-plus/icons-vue'
+import { Hide, View, Check, Plus, Setting, Refresh } from '@element-plus/icons-vue'
 
 // 响应式数据
 const loading = ref(false)
@@ -645,8 +654,26 @@ const toggleTokenVisibility = () => {
 <style scoped>
 .aihubmix-management {
   padding: 20px;
-  background: #f5f5f5;
+  background-color: #f5f5f5;
   min-height: 100vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .content {

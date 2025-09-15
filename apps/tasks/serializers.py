@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import TaskDefinition, TaskExecution, TaskSchedule
+from .models import TaskDefinition
+from .enhanced_models import TaskExecutionEnhanced, TaskScheduleEnhanced
 
 
 class TaskDefinitionSerializer(serializers.ModelSerializer):
@@ -14,11 +15,12 @@ class TaskDefinitionSerializer(serializers.ModelSerializer):
 class TaskExecutionSerializer(serializers.ModelSerializer):
     """任务执行记录序列化器"""
     task_name = serializers.CharField(source='task.name', read_only=True)
-    task_type = serializers.CharField(source='task.task_type', read_only=True)
+    trigger_method = serializers.CharField(source='task.trigger_method', read_only=True)
+    task_target = serializers.CharField(source='task.task_target', read_only=True)
     duration = serializers.SerializerMethodField()
     
     class Meta:
-        model = TaskExecution
+        model = TaskExecutionEnhanced
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
     
@@ -32,11 +34,12 @@ class TaskExecutionSerializer(serializers.ModelSerializer):
 class TaskScheduleSerializer(serializers.ModelSerializer):
     """任务调度序列化器"""
     task_name = serializers.CharField(source='task.name', read_only=True)
-    task_type = serializers.CharField(source='task.task_type', read_only=True)
+    trigger_method = serializers.CharField(source='task.trigger_method', read_only=True)
+    task_target = serializers.CharField(source='task.task_target', read_only=True)
     next_run_time = serializers.SerializerMethodField()
     
     class Meta:
-        model = TaskSchedule
+        model = TaskScheduleEnhanced
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
     
@@ -76,16 +79,53 @@ class TaskStatsSerializer(serializers.Serializer):
 
 class TaskCreateSerializer(serializers.ModelSerializer):
     """任务创建序列化器"""
+    stock_targets_list = serializers.ListField(
+        child=serializers.CharField(), 
+        required=False, 
+        write_only=True,
+        help_text="股票目标列表，仅当任务目标为股票数据更新时需要"
+    )
     
     class Meta:
         model = TaskDefinition
-        fields = ('name', 'description', 'task_type', 'parameters', 'is_active')
+        fields = ('name', 'description', 'trigger_method', 'task_target', 'task_args', 'stock_targets_list', 'is_active')
     
-    def validate_parameters(self, value):
+    def validate_task_args(self, value):
         """验证参数格式"""
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("参数必须是JSON对象格式")
+        if value:
+            try:
+                import json
+                if isinstance(value, str):
+                    json.loads(value)
+                elif not isinstance(value, dict):
+                    raise serializers.ValidationError("参数必须是JSON对象格式")
+            except json.JSONDecodeError:
+                raise serializers.ValidationError("参数格式不正确")
         return value
+    
+    def validate(self, attrs):
+        """整体验证"""
+        task_target = attrs.get('task_target')
+        stock_targets_list = attrs.get('stock_targets_list')
+        
+        # 如果任务目标是股票数据更新，必须提供股票目标列表
+        if task_target == 'stock_data_update' and not stock_targets_list:
+            raise serializers.ValidationError({
+                'stock_targets_list': '当任务目标为股票数据更新时，必须提供股票目标列表'
+            })
+        
+        return attrs
+    
+    def create(self, validated_data):
+        """创建任务"""
+        stock_targets_list = validated_data.pop('stock_targets_list', [])
+        task = super().create(validated_data)
+        
+        if stock_targets_list:
+            task.set_stock_targets(stock_targets_list)
+            task.save()
+        
+        return task
 
 
 class TaskUpdateSerializer(serializers.ModelSerializer):

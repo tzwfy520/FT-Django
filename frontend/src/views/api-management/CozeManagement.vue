@@ -2,7 +2,12 @@
   <div class="coze-management">
     <div class="page-header">
       <h2>Coze接口管理</h2>
-      <p class="text-muted">管理Coze AI助手接口配置和调用</p>
+      <div class="header-actions">
+        <el-button @click="loadBots" :loading="loading">
+          <el-icon><Refresh /></el-icon>
+          刷新
+        </el-button>
+      </div>
     </div>
 
     <!-- API Token配置 -->
@@ -150,6 +155,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Refresh } from '@element-plus/icons-vue'
 import TokenModal from './components/TokenModal.vue'
 import BotModal from './components/BotModal.vue'
 
@@ -328,15 +334,26 @@ const formatDate = (dateString: string) => {
 <style scoped>
 .coze-management {
   padding: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 }
 
 .page-header {
-  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .page-header h2 {
+  margin: 0;
   color: #2c3e50;
-  margin-bottom: 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .card {
