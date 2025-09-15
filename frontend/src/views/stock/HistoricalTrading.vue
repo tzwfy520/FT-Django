@@ -220,7 +220,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Setting, Star, View } from '@element-plus/icons-vue'
 import HistoryDataTable from './components/HistoryDataTable.vue'
-import { stockApi } from '@/services/api'
+import { stocksAPI } from '@/services/api'
 
 // 响应式数据
 const loading = ref(false)
@@ -292,26 +292,18 @@ const getStockInfo = async () => {
   }
   
   try {
-    // 这里应该调用获取股票基本信息的API
-    // const response = await stockApi.getStockInfo(queryForm.stockCode)
-    // stockInfo.value = response.data
-    
-    // 临时模拟数据
-    stockInfo.value = {
-      code: queryForm.stockCode,
-      name: '股票名称',
-      price: 10.50,
-      changePercent: 2.5,
-      changeAmount: 0.26,
-      volume: 1000000,
-      turnover: 10500000,
-      turnoverRate: 1.5
+    const response = await stocksAPI.getStockInfo(queryForm.stockCode)
+    if (response.data.success) {
+      stockInfo.value = response.data.data
+      queryForm.stockName = stockInfo.value.name
+    } else {
+      ElMessage.error(response.data.message || '获取股票信息失败')
+      stockInfo.value = null
     }
-    
-    queryForm.stockName = stockInfo.value.name
   } catch (error) {
     console.error('获取股票信息失败:', error)
     ElMessage.error('获取股票信息失败')
+    stockInfo.value = null
   }
 }
 
@@ -346,7 +338,7 @@ const loadDailyData = async () => {
       page_size: dailyPagination.pageSize
     }
     
-    const response = await stockApi.getDailyHistoryData(queryForm.stockCode, params)
+    const response = await stocksAPI.getDailyHistoryData(queryForm.stockCode, params)
     if (response.success) {
       dailyData.value = response.data.data
       dailyPagination.total = response.data.pagination.total_count
@@ -372,7 +364,7 @@ const loadWeeklyData = async () => {
       page_size: weeklyPagination.pageSize
     }
     
-    const response = await stockApi.getWeeklyHistoryData(queryForm.stockCode, params)
+    const response = await stocksAPI.getWeeklyHistoryData(queryForm.stockCode, params)
     if (response.success) {
       weeklyData.value = response.data.data
       weeklyPagination.total = response.data.pagination.total_count
@@ -398,7 +390,7 @@ const loadMonthlyData = async () => {
       page_size: monthlyPagination.pageSize
     }
     
-    const response = await stockApi.getMonthlyHistoryData(queryForm.stockCode, params)
+    const response = await stocksAPI.getMonthlyHistoryData(queryForm.stockCode, params)
     if (response.success) {
       monthlyData.value = response.data.data
       monthlyPagination.total = response.data.pagination.total_count
@@ -495,7 +487,7 @@ const createTask = async () => {
   taskCreating.value = true
   try {
     const stockCodes = taskForm.stockCodes.split(',').map(code => code.trim()).filter(code => code)
-    const response = await stockApi.createHistoryTask({
+    const response = await stocksAPI.createHistoryTask({
       stock_codes: stockCodes,
       task_type: taskForm.taskType
     })

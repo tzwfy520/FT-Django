@@ -137,6 +137,10 @@ export const stocksAPI = {
   // 搜索股票
   searchStocks: (params?: any) => apiClient.get('/stocks/search/', { params }),
   
+  // 获取股票基本信息
+  getStockInfo: (stockCode: string) => 
+    apiClient.get('/stocks/basic-info/', { params: { stock_code: stockCode } }),
+  
   // 自选股相关
   getWatchlist: (params?: any) => apiClient.get('/stocks/watchlist/', { params }),
   addToWatchlist: (data: any) => apiClient.post('/stocks/watchlist/', data),

@@ -514,7 +514,7 @@ class StockDataTaskScheduler(TaskScheduler):
             },
             'update_stock_history': {
                 'description': '更新股票历史数据',
-                'default_schedule': {'hour': 17, 'minute': 0},  # 每日17:00执行
+                'default_schedule': {'hour': 16, 'minute': 0},  # 每日16:00执行
                 'trading_days_only': True
             },
             'update_industry_data': {

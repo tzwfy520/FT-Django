@@ -7260,3 +7260,106 @@ INFO 2025-09-15 13:57:18,944 basehttp 6097 6158462976 "GET /api/v1/api-managemen
 WARNING 2025-09-15 13:57:18,996 log 6097 6193262592 Not Found: /api/v1/tasks/stats/
 WARNING 2025-09-15 13:57:18,997 basehttp 6097 6193262592 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
 INFO 2025-09-15 13:57:21,964 basehttp 6097 6158462976 "GET /api/v1/tasks/definitions/?page=1&page_size=20 HTTP/1.1" 200 1539
+INFO 2025-09-15 14:02:45,909 basehttp 6097 6158462976 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:04:56,390 autoreload 15960 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:04:56,778 database 15960 8604131520 Database connections initialized
+WARNING 2025-09-15 14:05:05,199 log 15960 6199521280 Not Found: /api/tasks/definitions/
+WARNING 2025-09-15 14:05:05,199 basehttp 15960 6199521280 "GET /api/tasks/definitions/ HTTP/1.1" 404 4213
+WARNING 2025-09-15 14:05:15,691 log 15960 6199521280 Forbidden: /api/v1/tasks/
+WARNING 2025-09-15 14:05:15,691 basehttp 15960 6199521280 "GET /api/v1/tasks/ HTTP/1.1" 403 43
+WARNING 2025-09-15 14:05:23,164 log 15960 6199521280 Bad Request: /api/v1/stocks/history/daily/
+WARNING 2025-09-15 14:05:23,164 basehttp 15960 6199521280 "GET /api/v1/stocks/history/daily/ HTTP/1.1" 400 89
+INFO 2025-09-15 14:13:52,057 services 21947 8604131520 历史数据采集任务已存在: 历史数据-前复权
+INFO 2025-09-15 14:16:09,079 basehttp 15960 6199521280 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+WARNING 2025-09-15 14:16:09,157 log 15960 6216347648 Not Found: /api/v1/tasks/stats/
+WARNING 2025-09-15 14:16:09,158 basehttp 15960 6216347648 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
+INFO 2025-09-15 14:16:09,950 basehttp 15960 6199521280 "GET /api/v1/tasks/definitions/?page=1&page_size=20 HTTP/1.1" 200 1539
+INFO 2025-09-15 14:16:59,860 basehttp 15960 6199521280 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+WARNING 2025-09-15 14:17:00,993 log 15960 6216347648 Not Found: /api/v1/tasks/stats/
+WARNING 2025-09-15 14:17:00,994 basehttp 15960 6216347648 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
+INFO 2025-09-15 14:17:01,743 basehttp 15960 6199521280 "GET /api/v1/tasks/definitions/?page=1&page_size=20 HTTP/1.1" 200 1539
+INFO 2025-09-15 14:17:21,596 basehttp 15960 6199521280 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+WARNING 2025-09-15 14:17:21,661 log 15960 6216347648 Not Found: /api/v1/tasks/stats/
+WARNING 2025-09-15 14:17:21,661 basehttp 15960 6216347648 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
+INFO 2025-09-15 14:17:23,140 basehttp 15960 6199521280 "GET /api/v1/tasks/definitions/?page=1&page_size=20 HTTP/1.1" 200 1539
+INFO 2025-09-15 14:17:30,468 basehttp 15960 6199521280 "GET /api/v1/stocks/watchlist/ HTTP/1.1" 200 980
+INFO 2025-09-15 14:18:43,470 basehttp 15960 6199521280 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:19:07,559 basehttp 15960 6199521280 "GET /api/v1/stocks/history/daily/?stock_code=000001 HTTP/1.1" 200 20135
+WARNING 2025-09-15 14:19:18,501 log 15960 6199521280 Not Found: /api/v1/stocks/basic-info/
+WARNING 2025-09-15 14:19:18,501 basehttp 15960 6199521280 "GET /api/v1/stocks/basic-info/?stock_code=000001 HTTP/1.1" 404 9168
+INFO 2025-09-15 14:20:42,964 autoreload 15960 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:20:42,979 autoreload 6097 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:20:43,657 autoreload 25595 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:20:43,657 autoreload 25596 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:20:44,128 database 25596 8604131520 Database connections initialized
+INFO 2025-09-15 14:20:44,128 database 25595 8604131520 Database connections initialized
+INFO 2025-09-15 14:20:51,880 autoreload 25596 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/urls.py changed, reloading.
+INFO 2025-09-15 14:20:51,884 autoreload 25595 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/urls.py changed, reloading.
+INFO 2025-09-15 14:20:52,263 autoreload 25626 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:20:52,263 autoreload 25625 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:20:52,569 database 25626 8604131520 Database connections initialized
+INFO 2025-09-15 14:20:52,569 database 25625 8604131520 Database connections initialized
+INFO 2025-09-15 14:21:00,351 basehttp 25626 6132396032 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:21:00,366 basehttp 25626 6132396032 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:21:01,005 basehttp 25626 6132396032 "GET /api/v1/stocks/watchlist/ HTTP/1.1" 200 980
+ERROR 2025-09-15 14:21:23,612 views 25626 6132396032 获取股票基本信息失败: Cannot resolve keyword 'stock_code' into field. Choices are: amount, change, change_pct, created_at, current_price, high_price, id, low_price, open_price, pb_ratio, pe_ratio, pre_close, stock, stock_id, timestamp, turnover_rate, volume
+WARNING 2025-09-15 14:21:23,613 log 25626 6132396032 Bad Request: /api/v1/stocks/basic-info/
+WARNING 2025-09-15 14:21:23,613 basehttp 25626 6132396032 "GET /api/v1/stocks/basic-info/?stock_code=000001 HTTP/1.1" 400 107
+INFO 2025-09-15 14:21:38,579 autoreload 25626 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:21:38,579 autoreload 25625 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:21:39,129 autoreload 26168 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:21:39,129 autoreload 26167 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:21:39,575 database 26167 8604131520 Database connections initialized
+INFO 2025-09-15 14:21:39,575 database 26168 8604131520 Database connections initialized
+INFO 2025-09-15 14:21:58,731 autoreload 26167 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:21:58,737 autoreload 26168 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:21:59,225 autoreload 26204 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:21:59,225 autoreload 26203 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:21:59,528 database 26204 8604131520 Database connections initialized
+INFO 2025-09-15 14:21:59,528 database 26203 8604131520 Database connections initialized
+ERROR 2025-09-15 14:22:06,733 views 26203 6201307136 获取股票基本信息失败: (1146, "Table 'django_stock.stock_realtime_data' doesn't exist")
+WARNING 2025-09-15 14:22:06,736 log 26203 6201307136 Bad Request: /api/v1/stocks/basic-info/
+WARNING 2025-09-15 14:22:06,737 basehttp 26203 6201307136 "GET /api/v1/stocks/basic-info/?stock_code=000001 HTTP/1.1" 400 107
+INFO 2025-09-15 14:23:27,978 autoreload 26204 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:23:27,983 autoreload 26203 8604131520 /Users/wangfuyu/PythonCode/FT-Django/apps/stocks/views.py changed, reloading.
+INFO 2025-09-15 14:23:28,593 autoreload 26985 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:23:28,593 autoreload 26984 8604131520 Watching for file changes with StatReloader
+INFO 2025-09-15 14:23:29,045 database 26984 8604131520 Database connections initialized
+INFO 2025-09-15 14:23:29,045 database 26985 8604131520 Database connections initialized
+WARNING 2025-09-15 14:23:37,386 views 26984 6127448064 获取实时数据失败: (1146, "Table 'django_stock.stock_realtime_data' doesn't exist")
+INFO 2025-09-15 14:23:37,388 basehttp 26984 6127448064 "GET /api/v1/stocks/basic-info/?stock_code=000001 HTTP/1.1" 200 339
+INFO 2025-09-15 14:23:44,591 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:24:30,216 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:24:30,845 basehttp 26984 6127448064 "GET /api/v1/stocks/watchlist/ HTTP/1.1" 200 980
+INFO 2025-09-15 14:25:39,102 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:27:09,152 basehttp 26984 6127448064 "POST /api/v1/api-management/auth/login/ HTTP/1.1" 200 140
+WARNING 2025-09-15 14:27:09,247 log 26984 6177927168 Not Found: /api/v1/tasks/stats/
+WARNING 2025-09-15 14:27:09,247 log 26984 6144274432 Not Found: /api/v1/ai/stats/
+WARNING 2025-09-15 14:27:09,247 basehttp 26984 6177927168 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
+WARNING 2025-09-15 14:27:09,247 basehttp 26984 6144274432 "GET /api/v1/ai/stats/ HTTP/1.1" 404 4195
+ERROR 2025-09-15 14:27:09,790 views 26984 6161100800 获取系统统计信息失败: Cannot resolve keyword 'category' into field. Choices are: config_key, config_name, config_type, config_value, created_at, description, id, is_active, is_encrypted, updated_at
+ERROR 2025-09-15 14:27:09,791 log 26984 6161100800 Internal Server Error: /api/v1/system/stats/
+ERROR 2025-09-15 14:27:09,791 basehttp 26984 6161100800 "GET /api/v1/system/stats/ HTTP/1.1" 500 95
+WARNING 2025-09-15 14:27:09,945 views 26984 6127448064 获取实时数据更新时间失败: (1146, "Table 'django_stock.stock_realtime_data' doesn't exist")
+INFO 2025-09-15 14:27:10,004 basehttp 26984 6127448064 "GET /api/v1/stocks/stats/ HTTP/1.1" 200 195
+INFO 2025-09-15 14:31:52,874 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:31:59,434 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:36:51,025 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:44:38,455 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+WARNING 2025-09-15 14:44:39,529 log 26984 6161100800 Not Found: /api/v1/ai/stats/
+WARNING 2025-09-15 14:44:39,532 log 26984 6144274432 Not Found: /api/v1/tasks/stats/
+WARNING 2025-09-15 14:44:39,532 basehttp 26984 6161100800 "GET /api/v1/ai/stats/ HTTP/1.1" 404 4195
+WARNING 2025-09-15 14:44:39,532 basehttp 26984 6144274432 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
+ERROR 2025-09-15 14:44:40,012 views 26984 6177927168 获取系统统计信息失败: Cannot resolve keyword 'category' into field. Choices are: config_key, config_name, config_type, config_value, created_at, description, id, is_active, is_encrypted, updated_at
+ERROR 2025-09-15 14:44:40,013 log 26984 6177927168 Internal Server Error: /api/v1/system/stats/
+ERROR 2025-09-15 14:44:40,013 basehttp 26984 6177927168 "GET /api/v1/system/stats/ HTTP/1.1" 500 95
+WARNING 2025-09-15 14:44:40,222 views 26984 6127448064 获取实时数据更新时间失败: (1146, "Table 'django_stock.stock_realtime_data' doesn't exist")
+INFO 2025-09-15 14:44:40,273 basehttp 26984 6127448064 "GET /api/v1/stocks/stats/ HTTP/1.1" 200 195
+INFO 2025-09-15 14:46:25,588 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:48:13,287 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 14:51:32,758 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 15:15:27,995 basehttp 26984 6127448064 "GET /api/v1/api-management/csrf-token/ HTTP/1.1" 200 81
+INFO 2025-09-15 15:15:44,252 basehttp 26984 6127448064 "GET /api/v1/system/datasources/ HTTP/1.1" 200 973
+WARNING 2025-09-15 15:15:45,068 log 26984 6144274432 Not Found: /api/v1/tasks/stats/
+WARNING 2025-09-15 15:15:45,069 basehttp 26984 6144274432 "GET /api/v1/tasks/stats/ HTTP/1.1" 404 27062
+INFO 2025-09-15 15:15:45,809 basehttp 26984 6127448064 "GET /api/v1/tasks/definitions/?page=1&page_size=20 HTTP/1.1" 200 1539

@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
 import Layout from './components/Layout.vue'
+
+const route = useRoute()
 </script>
 
 <template>
-  <Layout />
+  <Layout v-if="route.path !== '/login'" />
+  <router-view v-else />
 </template>
 
 <style>

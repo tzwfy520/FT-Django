@@ -686,9 +686,13 @@ class StockListView(BaseAPIView):
             
             # 获取用户自选股列表（用于标记是否已添加）
             user_id = 1  # 暂时使用固定用户ID
-            user_watchlist = set(WatchList.objects.filter(
-                user_id=user_id, is_active=True
-            ).values_list('stock__stock_code', flat=True))
+            try:
+                user_watchlist = set(WatchList.objects.filter(
+                    user_id=user_id, is_active=True
+                ).values_list('stock__stock_code', flat=True))
+            except Exception as e:
+                logger.warning(f'获取自选股列表失败: {str(e)}')
+                user_watchlist = set()
             
             # 序列化数据 - 与前端格式保持一致
             stocks = []
@@ -720,10 +724,6 @@ class StockListView(BaseAPIView):
                 'cache_time': datetime.now().isoformat()
             }
             
-            # 将数据存入缓存
-            cache_timeout = getattr(settings, 'CACHE_TIMEOUTS', {}).get('STOCK_OVERVIEW', 30)
-            cache.set(cache_key, response_data, cache_timeout)
-            
             return self.success_response(response_data)
             
         except ValueError as e:
@@ -746,28 +746,43 @@ class StockRealTimeDataView(BaseAPIView):
             
             codes_list = [code.strip() for code in stock_codes.split(',')]
             
-            # 从数据库获取实时数据
-            realtime_data = StockRealtimeData.objects.filter(
-                stock_code__in=codes_list
-            ).order_by('-update_time')
-            
-            # 如果数据库中没有数据或数据过期，从API获取
-            current_time = datetime.now()
+            # 尝试从数据库获取实时数据
             fresh_data = []
-            
-            for data in realtime_data:
-                if (current_time - data.update_time).seconds > 60:  # 数据超过1分钟认为过期
-                    # 从API获取新数据
-                    try:
-                        api_data = akshare_client.get_stock_realtime_data([data.stock_code])
-                        if api_data:
-                            processed_data = data_processor.process_realtime_data(api_data)
-                            # 保存到数据库
-                            stock_data_manager.save_realtime_data(processed_data)
-                            fresh_data.extend(processed_data)
-                    except Exception as e:
-                        logger.warning(f"获取股票 {data.stock_code} 实时数据失败: {str(e)}")
-                        # 使用数据库中的旧数据
+            try:
+                realtime_data = StockRealtimeData.objects.filter(
+                    stock_code__in=codes_list
+                ).order_by('-update_time')
+                
+                # 如果数据库中没有数据或数据过期，从API获取
+                current_time = datetime.now()
+                
+                for data in realtime_data:
+                    if (current_time - data.update_time).seconds > 60:  # 数据超过1分钟认为过期
+                        # 从API获取新数据
+                        try:
+                            api_data = akshare_client.get_stock_realtime_data([data.stock_code])
+                            if api_data:
+                                processed_data = data_processor.process_realtime_data(api_data)
+                                # 保存到数据库
+                                stock_data_manager.save_realtime_data(processed_data)
+                                fresh_data.extend(processed_data)
+                        except Exception as e:
+                            logger.warning(f"获取股票 {data.stock_code} 实时数据失败: {str(e)}")
+                            # 使用数据库中的旧数据
+                            fresh_data.append({
+                                'stock_code': data.stock_code,
+                                'current_price': float(data.current_price),
+                                'change_amount': float(data.change_amount),
+                                'change_percent': float(data.change_percent),
+                                'volume': data.volume,
+                                'turnover': float(data.turnover),
+                                'high_price': float(data.high_price),
+                                'low_price': float(data.low_price),
+                                'open_price': float(data.open_price),
+                                'pre_close_price': float(data.pre_close_price),
+                                'update_time': data.update_time.strftime('%Y-%m-%d %H:%M:%S')
+                            })
+                    else:
                         fresh_data.append({
                             'stock_code': data.stock_code,
                             'current_price': float(data.current_price),
@@ -781,19 +796,22 @@ class StockRealTimeDataView(BaseAPIView):
                             'pre_close_price': float(data.pre_close_price),
                             'update_time': data.update_time.strftime('%Y-%m-%d %H:%M:%S')
                         })
-                else:
+            except Exception as e:
+                logger.warning(f'实时数据表不存在或查询失败: {str(e)}')
+                # 返回默认数据
+                for code in codes_list:
                     fresh_data.append({
-                        'stock_code': data.stock_code,
-                        'current_price': float(data.current_price),
-                        'change_amount': float(data.change_amount),
-                        'change_percent': float(data.change_percent),
-                        'volume': data.volume,
-                        'turnover': float(data.turnover),
-                        'high_price': float(data.high_price),
-                        'low_price': float(data.low_price),
-                        'open_price': float(data.open_price),
-                        'pre_close_price': float(data.pre_close_price),
-                        'update_time': data.update_time.strftime('%Y-%m-%d %H:%M:%S')
+                        'stock_code': code,
+                        'current_price': 0.0,
+                        'change_amount': 0.0,
+                        'change_percent': 0.0,
+                        'volume': 0,
+                        'turnover': 0.0,
+                        'high_price': 0.0,
+                        'low_price': 0.0,
+                        'open_price': 0.0,
+                        'pre_close_price': 0.0,
+                        'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     })
             
             return self.success_response(fresh_data)
@@ -1086,6 +1104,69 @@ class StockOverviewView(BaseAPIView):
             return self.error_response('获取股票概览失败')
 
 
+@method_decorator(csrf_exempt, name='dispatch')
+class StockBasicInfoView(BaseAPIView):
+    """股票基本信息API"""
+    
+    def get(self, request):
+        """获取股票基本信息"""
+        try:
+            stock_code = request.GET.get('stock_code', '').strip()
+            if not stock_code:
+                return self.error_response('请提供股票代码')
+            
+            # 从数据库获取股票基本信息
+            try:
+                stock = StockBasicInfo.objects.get(stock_code=stock_code, is_active=True)
+            except StockBasicInfo.DoesNotExist:
+                return self.error_response('股票不存在')
+            
+            # 构建返回数据
+            stock_info = {
+                'code': stock.stock_code,
+                'name': stock.stock_name,
+                'market': stock.market,
+                'industry': stock.industry,
+                'list_date': stock.list_date.strftime('%Y-%m-%d') if stock.list_date else None,
+                'is_active': stock.is_active,
+                # 使用默认值，因为实时数据表可能不存在
+                'price': 0.0,
+                'changePercent': 0.0,
+                'changeAmount': 0.0,
+                'volume': 0,
+                'turnover': 0.0,
+                'turnoverRate': 0.0,
+                'update_time': None
+            }
+            
+            # 尝试获取最新的实时数据（如果表存在）
+            try:
+                realtime_data = StockRealtimeData.objects.filter(
+                    stock__stock_code=stock_code
+                ).order_by('-timestamp').first()
+                
+                # 如果有实时数据，更新实时信息
+                if realtime_data:
+                    stock_info.update({
+                        'price': float(realtime_data.current_price),
+                        'changePercent': float(realtime_data.change_pct),
+                        'changeAmount': float(realtime_data.change),
+                        'volume': int(realtime_data.volume),
+                        'turnover': float(realtime_data.amount),
+                        'turnoverRate': float(realtime_data.turnover_rate) if realtime_data.turnover_rate else 0.0,
+                        'update_time': realtime_data.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+                    })
+            except Exception as e:
+                # 如果实时数据表不存在或查询失败，使用默认值
+                logger.warning(f'获取实时数据失败: {str(e)}')
+            
+            return self.success_response(stock_info)
+            
+        except Exception as e:
+            logger.error(f"获取股票基本信息失败: {str(e)}")
+            return self.error_response('获取股票基本信息失败')
+
+
 @require_http_methods(["GET"])
 def stock_stats(request):
     """股票统计信息"""
@@ -1095,14 +1176,25 @@ def stock_stats(request):
         total_markets = StockBasicInfo.objects.values('market').distinct().count()
         
         # 最近更新时间
-        latest_realtime = StockRealtimeData.objects.order_by('-timestamp').first()
-        latest_history = StockHistoryData.objects.order_by('-created_at').first()
+        try:
+            latest_realtime = StockRealtimeData.objects.order_by('-timestamp').first()
+            latest_realtime_update = latest_realtime.update_time.strftime('%Y-%m-%d %H:%M:%S') if latest_realtime else None
+        except Exception as e:
+            logger.warning(f'获取实时数据更新时间失败: {str(e)}')
+            latest_realtime_update = None
+            
+        try:
+            latest_history = StockHistoryData.objects.order_by('-created_at').first()
+            latest_history_update = latest_history.created_at.strftime('%Y-%m-%d %H:%M:%S') if latest_history else None
+        except Exception as e:
+            logger.warning(f'获取历史数据更新时间失败: {str(e)}')
+            latest_history_update = None
         
         stats = {
             'total_stocks': total_stocks,
             'total_markets': total_markets,
-            'latest_realtime_update': latest_realtime.update_time.strftime('%Y-%m-%d %H:%M:%S') if latest_realtime else None,
-            'latest_history_update': latest_history.created_at.strftime('%Y-%m-%d %H:%M:%S') if latest_history else None
+            'latest_realtime_update': latest_realtime_update,
+            'latest_history_update': latest_history_update
         }
         
         return JsonResponse({

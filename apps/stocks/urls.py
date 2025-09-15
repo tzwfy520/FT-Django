@@ -7,6 +7,9 @@ urlpatterns = [
     # 股票列表和搜索
     path('list/', views.StockListView.as_view(), name='stock_list'),
     
+    # 股票基本信息
+    path('basic-info/', views.StockBasicInfoView.as_view(), name='stock_basic_info'),
+    
     # 股票概览
     path('overview/', views.StockOverviewView.as_view(), name='stock_overview'),
     
